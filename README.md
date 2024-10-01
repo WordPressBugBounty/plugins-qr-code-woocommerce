@@ -1,0 +1,1 @@
+# plugins-qr-code-woocommerce
