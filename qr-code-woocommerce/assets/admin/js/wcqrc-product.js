@@ -43,33 +43,44 @@ jQuery(document).ready(function ($) {
         }
     }
     
+    function getBulkPrintTitle(productId) {
+        var $title = jQuery("#result_" + productId + " .bulk_product-qr-code-title");
+        if (!$title.length) {
+            return "";
+        }
+        var $attrs = $title.find(".vproduct-attrs");
+        if ($attrs.length) {
+            var name = $title.clone().children(".vproduct-attrs").remove().end().text().trim();
+            var attrText = $attrs.find("div").map(function () {
+                return jQuery(this).text().trim();
+            }).get().filter(Boolean).join(", ");
+            return attrText ? name + " - " + attrText : name;
+        }
+        return $title.text().trim();
+    }
+
     $(document).on("click", ".print-qr", function (event) {
-        console.log("QR Printed.");
         var parent_result_id = jQuery(this).parents('.result').attr('id');
         var img_url = jQuery("#"+parent_result_id+" .product-qr-code-img").attr("src");
         var product_id = $(this).data("product_id");
-        // console.log(parent_result_id);
         var post_title = jQuery("#original_post_title").val();
-        // console.log(post_title);
-        if(post_title === undefined){
-            post_title = jQuery("#"+parent_result_id+" .bulk_product-qr-code-title").html();
+        if (post_title === undefined) {
+            post_title = getBulkPrintTitle(product_id);
         }
         var post_type = $("#product-type option:selected").val()
         
         if(post_type === "variable") {
             let variable_title = $(this).closest(".woocommerce_variation").find(" h3 > select").find(":selected").text();
-            //console.log(variable_title);
             if(variable_title !== "") {
                 post_title = post_title + " - " + variable_title;
             }
         }
         
         toDataURL(img_url, function (dataUrl) {
-            // console.log('RESULT:', dataUrl)
             var doc = new jsPDF();
             doc.setFontSize(25);
             doc.addImage(dataUrl, "JPEG", 15, 15, 180, 180);
-            var lines = doc.splitTextToSize(post_title, 160);
+            var lines = doc.splitTextToSize(String(post_title || ""), 160);
             doc.text(25, 210, lines);
             doc.save(product_id + ".pdf");
         });

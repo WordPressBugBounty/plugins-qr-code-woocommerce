@@ -170,13 +170,13 @@ jQuery(document).ready(function($){
 
     $('#mode').change(function() {
         if (this.value === 'plain') {
-            $('#label, #fontname, #fontcolor, #wooqr_upload_image').parents('tr').hide();
+            $('#label, #mSize, #mPosX, #mPosY, #fontname, #fontcolor, #wooqr_upload_image').parents('tr').hide();
         } else if (this.value === 'label') {
             $('#wooqr_upload_image').parents('tr').hide();
-            $('#label, #fontname, #fontcolor').parents('tr').show();
+            $('#label, #mSize, #mPosX, #mPosY, #fontname, #fontcolor').parents('tr').show();
         } else if (this.value === 'image') {
             $('#label, #fontname, #fontcolor').parents('tr').hide();
-            $('#wooqr_upload_image').parents('tr').show();
+            $('#mSize, #mPosX, #mPosY, #wooqr_upload_image').parents('tr').show();
         }
     });
 

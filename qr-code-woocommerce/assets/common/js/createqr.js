@@ -1,14 +1,54 @@
 'use strict';
 
-// console.log(wooqr_options['qr_options']);
-function genqrcode(permalink,id) {
+/**
+ * Generate a QR code into #product_qrcode_{id}.
+ *
+ * @param {string} permalink Target URL encoded into the QR.
+ * @param {string|number} id Product / coupon / variation ID.
+ */
+function genqrcode(permalink, id) {
+	if (typeof wooqr_options === 'undefined' || !wooqr_options || !wooqr_options.qr_options) {
+		return;
+	}
 
-    wooqr_options['qr_options'].text = permalink;
-    var wooqr_img = document.createElement('img');
-    wooqr_img.src =
-        wooqr_options['qr_options']['image'];
+	var target = document.getElementById('product_qrcode_' + id);
+	if (!target || typeof kjua !== 'function') {
+		return;
+	}
 
-    wooqr_options['qr_options']['image'] = wooqr_img;
+	if (target.getAttribute('data-wooqr-ready') === '1') {
+		return;
+	}
 
-    document.getElementById('product_qrcode_'+id).appendChild(kjua(wooqr_options['qr_options']));
+	var opts = Object.assign({}, wooqr_options.qr_options);
+	opts.text = String(permalink || '');
+
+	if (opts.image && typeof opts.image === 'string') {
+		var wooqrImg = document.createElement('img');
+		wooqrImg.src = opts.image;
+		opts.image = wooqrImg;
+	}
+
+	target.appendChild(kjua(opts));
+	target.setAttribute('data-wooqr-ready', '1');
+}
+
+/**
+ * Initialize QR nodes that declare data-wooqr-text (no inline scripts).
+ */
+function wooqrInitFromDom() {
+	var nodes = document.querySelectorAll('.product_qrcode[data-wooqr-text]');
+	Array.prototype.forEach.call(nodes, function (el) {
+		var id = el.getAttribute('data-wooqr-id') || String(el.id || '').replace(/^product_qrcode_/, '');
+		var text = el.getAttribute('data-wooqr-text') || '';
+		if (id && text) {
+			genqrcode(text, id);
+		}
+	});
+}
+
+if (document.readyState === 'loading') {
+	document.addEventListener('DOMContentLoaded', wooqrInitFromDom);
+} else {
+	wooqrInitFromDom();
 }

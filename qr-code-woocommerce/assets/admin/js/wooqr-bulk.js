@@ -1,224 +1,239 @@
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener('DOMContentLoaded', function () {
+	'use strict';
 
-	var wooqr_img = document.createElement('img');
-	wooqr_img.src =
-		wooqr['qr_options']['image'];
+	if (typeof wooqr === 'undefined' || !wooqr.qr_options) {
+		return;
+	}
 
-	wooqr['qr_options']['image'] = wooqr_img;
+	var qrOptions = Object.assign({}, wooqr.qr_options);
+	if (qrOptions.image && typeof qrOptions.image === 'string') {
+		var wooqrImg = document.createElement('img');
+		wooqrImg.src = qrOptions.image;
+		qrOptions.image = wooqrImg;
+	}
 
 	var myHeaders = new Headers();
-	myHeaders.append("X-WP-Nonce", wooqr.wp_rest);
+	myHeaders.append('X-WP-Nonce', wooqr.wp_rest);
 
 	var requestOptions = {
 		method: 'GET',
 		headers: myHeaders,
-		redirect: 'follow'
+		redirect: 'follow',
+		credentials: 'same-origin'
 	};
 
-
-
-	// Selecting The Container.
-	const container = document.querySelector('#wooqr-data');
-	createProductItem();
-	window.addEventListener('scroll',()=>{
-		const {scrollHeight,scrollTop,clientHeight} = document.documentElement;
-		if(scrollTop + clientHeight > scrollHeight - 5){
-			//setTimeout(createProductItem(),100);
-		}
-	});
-
-
-	// It append it to the container.
-	function createProductItem(pro_page = 1){
-
-		fetch(wooqr.wp_rest_url+"wc/v3/products?per_page=30&orderby=id&order=asc&page="+pro_page, requestOptions)
-			.then(
-				function(response) {
-					if (response.status !== 200) {
-						document.getElementById("wooqr-status").innerHTML('Looks like there was a problem. Status Code: ' +
-							response.status);
-						return;
-					}
-
-					response.json().then(function(data) {
-
-
-
-						// console.log(response.headers.get('X-WC-Webhook-ID'));
-						//  console.log(response.headers.get('X-WP-Total'));
-						// console.log(response.headers.get('X-WP-TotalPages'));
-						// console.log(response.headers.get('Content-Type'));
-						// console.log(response.headers.get('Date'));
-						// console.log(response.status);
-						// console.log(response.statusText);
-						// console.log(response.type);
-						// console.log(response.url);
-						data.forEach(p => {
-							let productItem = document.createElement('li');
-							// let iCat = p.categories.join(" ");
-							// console.log(p);
-							if(p.wooqr_code != "" && typeof p.wooqr_code != "undefined") {
-								var wooqr_image = wooqr.wooqr_folder+p.wooqr_code;
-
-							}
-							else {
-								var wooqr_image = wooqr.wooqr_plugin+"assets/admin/images/no_qr.svg";
-
-							}
-							productItem.setAttribute("id", "result_"+p.id);
-							productItem.setAttribute("data-proid", p.id);
-							productItem.className = 'result pro-item product-grid-item product_qrcode_content ptype-'+p.type+' ';
-							let iQR = "<div class='iqr-image'></div>";
-							let iId = "<span class='iid'><a href='"+ document.location.origin +"/wp-admin/post.php?post="+p.id+"&action=edit'>#" +p.id+ "</a> - "+p.type+"</span>";
-							let iName = "<div class='iname bulk_product-qr-code-title'>" +p.name+ "</div>";
-							let iPrice = "<div class='iprice bulk_product-qr-code-price'>" +p.price_html+ "</div>";
-							let iaction = "<div class='wooqr_actions'><div class='button button-primary print-qr dashicons-before dashicons-print' data-product_id='"+p.id+"'>Print</div></div>";
-
-							if(p.type == "variable") {
-								iaction = "<div class='wooqr_actions'><div class='button button-primary print-qr dashicons-before dashicons-print' data-product_id='"+p.id+"'>Print</div><div class='button button-primary show-qr-variations dashicons-before dashicons-print' data-product_id='"+p.id+"' data-product_title='"+p.name+"'>Show Variations</div></div>";
-
-							}
-
-
-							// content
-							wooqr['qr_options'].text = p.permalink;
-
-
-							productItem.innerHTML = iQR + iId + iName + iPrice + iaction;
-							//   Appending the post to the container.
-
-							productItem.querySelector(".iqr-image").appendChild(kjua(wooqr['qr_options']));
-
-							container.appendChild(productItem);
-
-
-						});
-						pro_page += 1;
-						//console.log(pro_page);
-						if( (pro_page <= response.headers.get('X-WP-TotalPages') )) {
-							setTimeout(createProductItem(pro_page),100);
-						}
-						else {
-							document.getElementById("wooqr_loader").style.display = "none";
-						}
-
-					});
-				}
-			)
-			.catch(function(err) {
-				document.getElementById("wooqr-status").innerHTML('Fetch Error :-S', err);
-			});
-
+	var container = document.querySelector('#wooqr-data');
+	if (!container) {
+		return;
 	}
 
-
-	document.addEventListener('click',function(e){
-
-		if(e.target && e.target.classList.contains("show-qr-variations")){
-
-
-			/* document.querySelectorAll('.qr-variations').forEach(function(a) {
-				a.remove()
-			}) */
-			var pid = e.target.getAttribute('data-product_id');
-			var pname = e.target.getAttribute('data-product_title');
-			e.target.classList.remove('show-qr-variations');
-			// console.log(pid);
-			let vpro_page = 1;
-			wooqr_fetch_variations(pid, pname, vpro_page);
-
-			function wooqr_fetch_variations(pid, pname, vpro_page = 1) {
-				fetch(wooqr.wp_rest_url+"wc/v3/products/"+pid+"/variations/?per_page=30&orderby=id&order=asc&page="+vpro_page, requestOptions)
-					.then(
-						function(response) {
-							if (response.status !== 200) {
-								document.getElementById("wooqr-status").innerHTML('Looks like there was a problem. Status Code: ' +
-									response.status);
-								return;
-							}
-
-							response.json().then(function(data) {
-
-								// console.log(data);
-								// console.log(response.headers.get('X-WC-Webhook-ID'));
-								//  console.log(response.headers.get('X-WP-Total'));
-								// console.log(response.headers.get('X-WP-TotalPages'));
-								// console.log(response.headers.get('Content-Type'));
-								// console.log(response.headers.get('Date'));
-								// console.log(response.status);
-								// console.log(response.statusText);
-								// console.log(response.type);
-								// console.log(response.url);
-								data.forEach(p => {
-									let productItem = document.createElement('li');
-
-									// console.log(p);
-									let text = "";
-									for (let i in p.attributes) {
-										text += p.attributes[i].name + ": " + p.attributes[i].option + "<br> ";
-									}
-
-									if(p.wooqr_code != "" && typeof p.wooqr_code != "undefined") {
-										var wooqr_image = wooqr.wooqr_folder+p.wooqr_code;
-
-									}
-									else {
-										var wooqr_image = wooqr.wooqr_plugin+"assets/admin/images/no_qr.svg";
-
-									}
-									if(p.price){
-										var vprice = wooqr.woo_currency + "" + p.price;
-									} else {
-										var vprice = "price not set";
-									}
-									productItem.setAttribute("id", "result_"+p.id);
-									productItem.setAttribute("data-proid", p.id);
-									productItem.className = 'result pro-item product-grid-item product_qrcode_content qr-variations';
-									let iQR = "<div class='iqr-image'></div>";
-									let iId = "<span class='iid'><a href='"+ document.location.origin +"/wp-admin/post.php?post="+pid+"&action=edit'>#" +p.id+ "</a> - variation</span>";
-									let iName = "<div class='iname bulk_product-qr-code-title'>" +pname+ "<div class='vproduct-attrs'>"+text+"</div></div>";
-									let iPrice = "<div class='iprice bulk_product-qr-code-price'>" +vprice+ "</div>";
-									let iaction = "<div class='wooqr_actions'><div class='button button-primary print-qr dashicons-before dashicons-print' data-product_id='"+p.id+"'>Print</div></div>";
-
-
-
-									wooqr['qr_options'].text = p.permalink;
-
-									productItem.innerHTML = iQR + iId + iName + iPrice + iaction;
-									//   Appending the post to the container.
-
-									productItem.querySelector(".iqr-image").appendChild(kjua(wooqr['qr_options']));
-
-
-									function insertAfter(referenceNode, newNode) {
-										referenceNode.parentNode.insertBefore(newNode, referenceNode.nextSibling);
-									}
-
-									let currentli = document.getElementById("result_"+pid);
-									insertAfter(currentli, productItem);
-
-									// container.appendChild(productItem);
-
-
-								});
-								vpro_page += 1;
-								//console.log(pro_page);
-								if( (vpro_page <= response.headers.get('X-WP-TotalPages') )) {
-									setTimeout(wooqr_fetch_variations(pid, vpro_page),100);
-								}
-								else {
-									document.getElementById("wooqr_loader").style.display = "none";
-								}
-								e.target.parentElement.removeChild(e.target);
-							});
-						}
-					)
-					.catch(function(err) {
-						document.getElementById("wooqr-status").innerHTML('Fetch Error :-S', err);
-					});
-
-			}
-
+	function setStatus(message) {
+		var status = document.getElementById('wooqr-status');
+		if (status) {
+			status.textContent = message || '';
 		}
+	}
+
+	function editUrl(postId) {
+		var base = wooqr.admin_url || (document.location.origin + '/wp-admin/post.php');
+		return base + (base.indexOf('?') >= 0 ? '&' : '?') + 'post=' + encodeURIComponent(postId) + '&action=edit';
+	}
+
+	function createEl(tag, className, text) {
+		var el = document.createElement(tag);
+		if (className) {
+			el.className = className;
+		}
+		if (typeof text === 'string') {
+			el.textContent = text;
+		}
+		return el;
+	}
+
+	function appendPrintButton(parent, productId) {
+		var actions = createEl('div', 'wooqr_actions');
+		var printBtn = createEl('div', 'button button-primary print-qr dashicons-before dashicons-print', 'Print');
+		printBtn.setAttribute('data-product_id', String(productId));
+		actions.appendChild(printBtn);
+		parent.appendChild(actions);
+		return actions;
+	}
+
+	function appendQr(productItem, permalink) {
+		var opts = Object.assign({}, qrOptions);
+		opts.text = permalink || '';
+		var qrWrap = createEl('div', 'iqr-image');
+		productItem.insertBefore(qrWrap, productItem.firstChild);
+		if (typeof kjua === 'function') {
+			qrWrap.appendChild(kjua(opts));
+		}
+	}
+
+	function buildProductItem(p) {
+		var productItem = createEl('li', 'result pro-item product-grid-item product_qrcode_content ptype-' + String(p.type || ''));
+		productItem.id = 'result_' + p.id;
+		productItem.setAttribute('data-proid', String(p.id));
+
+		var idSpan = createEl('span', 'iid');
+		var idLink = document.createElement('a');
+		idLink.href = editUrl(p.id);
+		idLink.textContent = '#' + p.id;
+		idSpan.appendChild(idLink);
+		idSpan.appendChild(document.createTextNode(' - ' + String(p.type || '')));
+
+		var nameDiv = createEl('div', 'iname bulk_product-qr-code-title', p.name || '');
+		var priceDiv = createEl('div', 'iprice bulk_product-qr-code-price');
+		// price_html is trusted WooCommerce HTML for admins; keep via sanitizing parse.
+		priceDiv.innerHTML = (p.price_html || '').replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '');
+
+		productItem.appendChild(idSpan);
+		productItem.appendChild(nameDiv);
+		productItem.appendChild(priceDiv);
+
+		var actions = appendPrintButton(productItem, p.id);
+		if (p.type === 'variable') {
+			var showVar = createEl('div', 'button button-primary show-qr-variations dashicons-before dashicons-print', 'Show Variations');
+			showVar.setAttribute('data-product_id', String(p.id));
+			showVar.setAttribute('data-product_title', p.name || '');
+			actions.appendChild(showVar);
+		}
+
+		appendQr(productItem, p.permalink);
+		return productItem;
+	}
+
+	function buildVariationItem(p, parentId, parentName) {
+		var productItem = createEl('li', 'result pro-item product-grid-item product_qrcode_content qr-variations');
+		productItem.id = 'result_' + p.id;
+		productItem.setAttribute('data-proid', String(p.id));
+
+		var idSpan = createEl('span', 'iid');
+		var idLink = document.createElement('a');
+		idLink.href = editUrl(parentId);
+		idLink.textContent = '#' + p.id;
+		idSpan.appendChild(idLink);
+		idSpan.appendChild(document.createTextNode(' - variation'));
+
+		var nameDiv = createEl('div', 'iname bulk_product-qr-code-title', parentName || '');
+		var attrs = createEl('div', 'vproduct-attrs');
+		if (p.attributes && p.attributes.length) {
+			p.attributes.forEach(function (attr) {
+				var line = createEl('div', '', (attr.name || '') + ': ' + (attr.option || ''));
+				attrs.appendChild(line);
+			});
+		}
+		nameDiv.appendChild(attrs);
+
+		var priceDiv = createEl('div', 'iprice bulk_product-qr-code-price');
+		if (p.price) {
+			priceDiv.textContent = String(wooqr.woo_currency || '') + String(p.price);
+		} else {
+			priceDiv.textContent = 'price not set';
+		}
+
+		productItem.appendChild(idSpan);
+		productItem.appendChild(nameDiv);
+		productItem.appendChild(priceDiv);
+		appendPrintButton(productItem, p.id);
+		appendQr(productItem, p.permalink);
+		return productItem;
+	}
+
+	function createProductItem(pro_page) {
+		pro_page = pro_page || 1;
+
+		fetch(wooqr.wp_rest_url + 'wc/v3/products?per_page=30&orderby=id&order=asc&page=' + pro_page, requestOptions)
+			.then(function (response) {
+				if (response.status !== 200) {
+					setStatus('Looks like there was a problem. Status Code: ' + response.status);
+					return null;
+				}
+				return response.json().then(function (data) {
+					return { data: data, response: response };
+				});
+			})
+			.then(function (result) {
+				if (!result) {
+					return;
+				}
+				result.data.forEach(function (p) {
+					container.appendChild(buildProductItem(p));
+				});
+				pro_page += 1;
+				var totalPages = parseInt(result.response.headers.get('X-WP-TotalPages'), 10) || 1;
+				if (pro_page <= totalPages) {
+					setTimeout(function () {
+						createProductItem(pro_page);
+					}, 100);
+				} else {
+					var loader = document.getElementById('wooqr_loader');
+					if (loader) {
+						loader.style.display = 'none';
+					}
+				}
+			})
+			.catch(function () {
+				setStatus('Fetch Error');
+			});
+	}
+
+	createProductItem();
+
+	document.addEventListener('click', function (e) {
+		if (!(e.target && e.target.classList.contains('show-qr-variations'))) {
+			return;
+		}
+
+		var pid = e.target.getAttribute('data-product_id');
+		var pname = e.target.getAttribute('data-product_title') || '';
+		e.target.classList.remove('show-qr-variations');
+
+		function wooqr_fetch_variations(vpro_page) {
+			vpro_page = vpro_page || 1;
+			fetch(wooqr.wp_rest_url + 'wc/v3/products/' + encodeURIComponent(pid) + '/variations/?per_page=30&orderby=id&order=asc&page=' + vpro_page, requestOptions)
+				.then(function (response) {
+					if (response.status !== 200) {
+						setStatus('Looks like there was a problem. Status Code: ' + response.status);
+						return null;
+					}
+					return response.json().then(function (data) {
+						return { data: data, response: response };
+					});
+				})
+				.then(function (result) {
+					if (!result) {
+						return;
+					}
+					result.data.forEach(function (p) {
+						var productItem = buildVariationItem(p, pid, pname);
+						var currentli = document.getElementById('result_' + pid);
+						if (currentli && currentli.parentNode) {
+							currentli.parentNode.insertBefore(productItem, currentli.nextSibling);
+						} else {
+							container.appendChild(productItem);
+						}
+					});
+					vpro_page += 1;
+					var totalPages = parseInt(result.response.headers.get('X-WP-TotalPages'), 10) || 1;
+					if (vpro_page <= totalPages) {
+						setTimeout(function () {
+							wooqr_fetch_variations(vpro_page);
+						}, 100);
+					} else {
+						var loader = document.getElementById('wooqr_loader');
+						if (loader) {
+							loader.style.display = 'none';
+						}
+						if (e.target && e.target.parentElement) {
+							e.target.parentElement.removeChild(e.target);
+						}
+					}
+				})
+				.catch(function () {
+					setStatus('Fetch Error');
+				});
+		}
+
+		wooqr_fetch_variations(1);
 	});
 });
